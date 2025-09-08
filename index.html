@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Little Flower School — Online App</title>
+  <link rel="icon" href="assets/img/logo.png" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body data-theme="dark">
+
+  <header class="topbar">
+    <div class="brand">
+      <img id="logoImg" src="assets/img/logo.png" class="logo" alt="logo"/>
+      <div>
+        <div id="schoolName" class="brand-title">Little Flower School</div>
+        <div class="brand-sub">Digital School • Students · Teachers · Admin</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <select id="themeSelect" title="Theme">
+        <option value="dark">🌙 Dark</option>
+        <option value="light">☀ Light</option>
+      </select>
+      <button id="btnMenu" class="icon">☰</button>
+    </div>
+  </header>
+
+  <nav id="drawer" class="drawer hidden">
+    <button id="closeDrawer" class="closeBtn">✕</button>
+    <ul>
+      <li><button data-nav="home">Home</button></li>
+      <li><button data-nav="login">Login</button></li>
+      <li><button data-nav="calendar">Calendar</button></li>
+      <li><button data-nav="notices">Notices</button></li>
+      <li><button data-nav="gallery">Gallery</button></li>
+      <li><button data-nav="timetable">Timetable</button></li>
+      <li><button data-nav="attendance">Attendance</button></li>
+      <li><button data-nav="fees">Fees</button></li>
+      <li><button data-nav="leaves">Leaves</button></li>
+      <li><button data-nav="about">About</button></li>
+    </ul>
+    <div class="drawer-footer">
+      <div class="muted">Developer: Shubham Arun Hajare</div>
+      <div class="muted">Contact: 9022761401</div>
+    </div>
+  </nav>
+
+  <main class="container" id="appRoot">
+
+    <!-- Home -->
+    <section id="home" class="screen">
+      <div class="hero card">
+        <div>
+          <h1>Welcome to Little Flower School</h1>
+          <p class="muted">Professional portal for Students, Teachers and Admin — powered by Supabase</p>
+          <div class="hero-actions">
+            <button id="primaryLogin" class="btn primary">Login</button>
+            <button id="openCalendar" class="btn outline">School Calendar</button>
+          </div>
+        </div>
+        <aside class="hero-right">
+          <div class="card small">
+            <div class="muted small">Next event</div>
+            <div id="nextEvent">—</div>
+          </div>
+          <div class="card small" style="margin-top:10px">
+            <div class="muted small">Latest notice</div>
+            <div id="latestNotice">—</div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="card modules-grid" id="homeModules"></div>
+    </section>
+
+    <!-- Login -->
+    <section id="login" class="screen hidden">
+      <div class="card auth-card">
+        <h2>Login</h2>
+        <div class="row">
+          <label>User ID</label>
+          <input id="loginId" placeholder="username or id"/>
+        </div>
+        <div class="row">
+          <label>Password</label>
+          <input id="loginPass" type="password" placeholder="password"/>
+        </div>
+        <div class="row">
+          <button id="btnLogin" class="btn primary">Login</button>
+          <button id="btnBackHome" class="btn outline">Back</button>
+        </div>
+        <div class="muted small">For first-time use: admin / admin123 (if you ran SQL seeder)</div>
+      </div>
+    </section>
+
+    <!-- Dashboard (role-based) -->
+    <section id="dashboard" class="screen hidden">
+      <div class="card dash-top">
+        <div>
+          <div class="muted">Dashboard</div>
+          <h2 id="dashTitle">—</h2>
+          <div id="dashRole" class="muted small">—</div>
+        </div>
+        <div class="dash-actions">
+          <button id="btnBack" class="btn outline">Back</button>
+          <button id="btnLogout" class="btn">Logout</button>
+        </div>
+      </div>
+
+      <div id="dashModules" class="card modules-grid"></div>
+      <div id="dashContent" class="card" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Generic module container -->
+    <section id="moduleView" class="screen hidden">
+      <div id="moduleBackBar" class="module-backbar">
+        <button id="moduleBackBtn" class="btn outline">← Back</button>
+      </div>
+      <div id="moduleContent" class="card"></div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="screen hidden">
+      <div class="card">
+        <h3>About This App</h3>
+        <p>This portal (Little Flower School) is built for demo & school use. Developer: Shubham Arun Hajare • Contact: 9022761401</p>
+      </div>
+    </section>
+
+    <!-- modal root -->
+    <div id="modalRoot" class="modal-root hidden"></div>
+
+  </main>
+
+  <footer class="footer muted">Little Flower School • Online App</footer>
+
+  <!-- Supabase client + app logic -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/supabaseClient.js"></script>
+  <script src="assets/js/main.js"></script>
+
+  <!-- modules -->
+  <script src="assets/js/users.js"></script>
+  <script src="assets/js/attendance.js"></script>
+  <script src="assets/js/fees.js"></script>
+  <script src="assets/js/leaves.js"></script>
+  <script src="assets/js/gallery.js"></script>
+  <script src="assets/js/timetable.js"></script>
+  <script src="assets/js/calendar.js"></script>
+
+</body>
+</html>
