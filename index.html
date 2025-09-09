@@ -890,64 +890,90 @@
         await load();
       };
 
-      // calendar.js
-      window.moduleOpen_calendar = async function(ctx) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-        document.getElementById('moduleView').classList.remove('hidden');
-        document.getElementById('moduleContent').innerHTML = `<h3>School Calendar (2025–26)</h3>
-          <div id="calControls" style="margin-top:8px"></div>
-          <div id="calList" style="margin-top:12px"></div>`;
+      // modules/calendar.js
+import { supabase } from '../assets/js/supabaseClient.js';
 
-        const ctrl = document.getElementById('calControls');
-        ctrl.innerHTML = '';
-        const seedBtn = document.createElement('button');
-        seedBtn.className = 'btn outline';
-        seedBtn.textContent = 'Seed Year Events (if missing)';
-        seedBtn.onclick = seedEvents;
-        ctrl.appendChild(seedBtn);
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-        async function load() {
-          const { data } = await supabase.from('calendar_events').select('*').order('date', { ascending: true });
-          if (!data || !data.length) {
-            document.getElementById('calList').innerHTML = '<div class="muted">No events. Use "Seed Year Events".</div>';
-            return;
-          }
-          const html = data.map(e => `<div class="card"><strong>${e.date} • ${e.title}</strong><div class="muted">${e.type || ''}</div><div style="margin-top:6px">${e.description || ''}</div></div>`).join('');
-          document.getElementById('calList').innerHTML = html;
-        }
+export const calendarModule = {
+  async render({root, session}){
+    root.innerHTML = '<h3>School Calendar</h3><div id="calControls" style="display:flex;gap:8px;align-items:center;margin:10px 0"></div><div id="calRoot"></div>';
+    const calRoot = root.querySelector('#calRoot');
+    const controls = root.querySelector('#calControls');
 
-        async function seedEvents() {
-          const events = [
-            { date: '2025-06-16', title: 'School Start & Admission Period begins', type: 'info' },
-            { date: '2025-06-21', title: 'Yoga Day & PTM', type: 'event' },
-            { date: '2025-08-15', title: 'Independence Day', type: 'holiday' },
-            { date: '2025-10-16', title: 'Diwali Holiday Start', type: 'holiday' },
-            { date: '2026-01-26', title: 'Republic Day', type: 'event' }
-          ];
-          for (const ev of events) {
-            await supabase.from('calendar_events').upsert({ id: (ev.date + '-' + ev.title).slice(0, 60), date: ev.date, title: ev.title, type: ev.type, description: ev.description || '' });
-          }
-          toast('Seeded events (small sample). For full year run SQL seed script.');
-          await load();
-        }
+    // month/year controls
+    const now = new Date();
+    let curMonth = now.getMonth();
+    let curYear = now.getFullYear();
 
-        await load();
-      };
+    function buildControls(){
+      controls.innerHTML = `
+        <button id="prev" class="btn outline">◀</button>
+        <div style="font-weight:700;margin:0 8px">${MONTH_NAMES[curMonth]} ${curYear}</div>
+        <button id="next" class="btn outline">▶</button>
+        <select id="yearSelect" class="btn outline" style="margin-left:8px"></select>
+      `;
+      const ys = controls.querySelector('#yearSelect');
+      for(let y=2024;y<=2028;y++){
+        const o = document.createElement('option'); o.value=y; o.textContent=y; if(y===curYear) o.selected=true; ys.appendChild(o);
+      }
+      controls.querySelector('#prev').onclick = ()=> { curMonth--; if(curMonth<0){ curMonth=11; curYear--; } render(); };
+      controls.querySelector('#next').onclick = ()=> { curMonth++; if(curMonth>11){ curMonth=0; curYear++; } render(); };
+      ys.onchange = ()=> { curYear = Number(ys.value); render(); };
+    }
 
-      // openModule delegates to module files (they must attach window.openModule)
-      window.openModule = async function(moduleId) {
-        const currentScreenId = document.querySelector('.screen:not(.hidden)').id;
-        hideAllScreens();
-        show($('#moduleView'));
-        $('#moduleBackBtn').onclick = () => navigate(currentScreenId);
+    async function fetchEvents(month, year){
+      try {
+        // stored events in calendar_events table: date is TEXT or DATE in YYYY-MM-DD
+        const start = `${year}-${String(month+1).padStart(2,'0')}-01`;
+        const { data } = await supabase.from('calendar_events').select('*').gte('date', `${year}-${String(month+1).padStart(2,'0')}-01`).lte('date', `${year}-${String(month+1).padStart(2,'0')}-31`);
+        return data || [];
+      } catch(e){ console.error(e); return []; }
+    }
 
-        if (window['moduleOpen_' + moduleId]) {
-          await window['moduleOpen_' + moduleId]({ session: SESSION, navigate });
-          return;
-        }
+    async function render(){
+      buildControls();
+      calRoot.innerHTML = '';
+      const events = await fetchEvents(curMonth, curYear);
+      const firstDay = new Date(curYear, curMonth, 1).getDay(); // 0 Sun..6
+      const days = new Date(curYear, curMonth+1, 0).getDate();
+      const grid = document.createElement('div'); grid.className='calendar-grid';
+      // pad blanks until firstDay (assuming week starts Sun)
+      for(let i=0;i<firstDay;i++){
+        const blank = document.createElement('div'); blank.className='calendar-day'; blank.innerHTML = `<div style="opacity:.2"> </div>`; grid.appendChild(blank);
+      }
+      for(let d=1; d<=days; d++){
+        const dayDiv = document.createElement('div'); dayDiv.className='calendar-day';
+        const dd = `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayEvents = events.filter(ev=> ev.date === dd);
+        dayDiv.innerHTML = `<div class="date-num">${d}</div>`;
+        dayEvents.forEach(ev=>{
+          const el = document.createElement('div'); el.className='badge'; el.textContent = ev.title;
+          el.style.marginTop = '6px';
+          el.onclick = ()=> showEvent(ev);
+          dayDiv.appendChild(el);
+        });
+        grid.appendChild(dayDiv);
+      }
+      calRoot.appendChild(grid);
+    }
 
-        $('#moduleContent').innerHTML = `<h3>${moduleId}</h3><div class="muted">Module not implemented</div>`;
-      };
+    function showEvent(ev){
+      const cont = document.createElement('div');
+      cont.innerHTML = `<h4>${ev.title}</h4><div class="muted small">${ev.date}</div><p style="margin-top:8px">${ev.description||''}</p>`;
+      const modalRoot = document.getElementById('modalRoot');
+      modalRoot.classList.remove('hidden');
+      modalRoot.innerHTML = `<div class="card">${cont.outerHTML}<div style="text-align:right;margin-top:12px"><button id="closeEv" class="btn">Close</button></div></div>`;
+      document.getElementById('closeEv').onclick = ()=> { modalRoot.classList.add('hidden'); modalRoot.innerHTML=''; };
+    }
+
+    await render();
+  }
+};
+
+window.calendarModule = calendarModule;
+
+        
 
       // expose logout for other modules
       window.APP = { getSession: () => SESSION, setSession: s => { SESSION = s; localStorage.setItem('lfs_session', JSON.stringify(s)); renderAfterLogin(); } };
